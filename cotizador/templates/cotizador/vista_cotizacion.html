@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cotización</title>
+    <style>
+        body { font-family: sans-serif; margin: 40px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
+        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        .total-row { font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <h1>Cotización para: {{ cotizacion.proyecto.cliente.nombre }}</h1>
+    <p><strong>Proyecto:</strong> {{ cotizacion.proyecto.nombre }}</p>
+    <p><strong>Fecha:</strong> {{ cotizacion.fecha_creacion|date:"d/m/Y" }}</p>
+    <p><strong>Válida hasta:</strong> {{ cotizacion.valida_hasta|date:"d/m/Y" }}</p>
+
+    <table>
+        <thead>
+            <tr>
+                <th>Descripción</th>
+                <th>Cantidad</th>
+                <th>Precio Unitario</th>
+                <th>Subtotal</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for item in cotizacion.items.all %}
+            <tr>
+                <td>{{ item.descripcion_agrupada }}</td>
+                <td>{{ item.cantidad }}</td>
+                <td>${{ item.precio_unitario|floatformat:2 }}</td>
+                <td>${{ item.subtotal|floatformat:2 }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+
+    <hr>
+
+    <table>
+        <tr class="total-row">
+            <td>SUBTOTAL</td>
+            <td>${{ cotizacion.subtotal_antes_impuestos|floatformat:2 }}</td>
+        </tr>
+        <tr>
+            <td>IVA ({{ cotizacion.porcentaje_impuestos }}%)</td>
+            <td>${{ cotizacion.valor_impuestos_calculado|floatformat:2 }}</td>
+        </tr>
+        <tr class="total-row">
+            <td>TOTAL</td>
+            <td>${{ cotizacion.total|floatformat:2 }}</td>
+        </tr>
+    </table>
+
+</body>
+</html>

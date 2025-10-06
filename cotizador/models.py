@@ -1,4 +1,5 @@
 # Importaciones necesarias de Django
+from django.core.validators import RegexValidator
 from django.db import models
 from django.utils import timezone
 import uuid
@@ -27,13 +28,68 @@ class Intermediario(models.Model):
     datos_pago = models.TextField(blank=True, help_text="Información para liquidación de comisiones")
     def __str__(self): return self.nombre_completo
 
+    # ¡NUEVO MODELO para las opciones de Responsabilidad Fiscal!
+class ResponsabilidadFiscal(models.Model):
+    codigo = models.CharField(max_length=5)
+    descripcion = models.CharField(max_length=100)
+
+    def __str__(self):
+        return f"{self.codigo} - {self.descripcion}"
+
+# ¡NUEVO MODELO para los contactos adicionales!
+class Contacto(models.Model):
+    cliente = models.ForeignKey('Cliente', on_delete=models.CASCADE, related_name='contactos')
+    nombre = models.CharField(max_length=100)
+    apellido = models.CharField(max_length=100, blank=True)
+    email = models.EmailField(blank=True)
+    cargo = models.CharField(max_length=100, blank=True)
+    telefono = models.CharField(max_length=20, blank=True)
+
+    def __str__(self):
+        return f"{self.nombre} {self.apellido}"
+
+# ¡MODELO CLIENTE ACTUALIZADO Y MEJORADO!
 class Cliente(models.Model):
-    nombre = models.CharField(max_length=200)
-    email = models.EmailField(unique=True)
+
+    # --- Campos para diferenciar Persona y Empresa ---
+    TIPO_CLIENTE_CHOICES = [
+        ('PERSONA', 'Persona'),
+        ('EMPRESA', 'Empresa'),
+    ]
+    tipo = models.CharField(max_length=10, choices=TIPO_CLIENTE_CHOICES, default='PERSONA')
+
+    # --- Campos para Persona ---
+    nombres = models.CharField(max_length=200, blank=True)
+    apellidos = models.CharField(max_length=200, blank=True)
+
+    # --- Campos para Empresa ---
+    razon_social = models.CharField(max_length=255, blank=True)
+    nombre_comercial = models.CharField(max_length=255, blank=True)
+
+    # --- Campos Comunes de Identificación ---
+    TIPO_ID_CHOICES = [
+        ('NIT', 'NIT'),
+        ('CC', 'Cédula de ciudadanía'),
+    ]
+    tipo_identificacion = models.CharField(max_length=5, choices=TIPO_ID_CHOICES, blank=True)
+    identificacion = models.CharField(max_length=20, blank=True, unique=True, null=True)
+    digito_verificacion = models.CharField("DV", max_length=1, blank=True)
+
+    # --- Campos Comunes de Contacto y Ubicación ---
+    email = models.EmailField(blank=True)
     telefono = models.CharField(max_length=20, blank=True)
     direccion = models.CharField(max_length=255, blank=True)
-    def __str__(self): return self.nombre
+    ciudad = models.CharField(max_length=100, blank=True)
 
+    # --- Campos Fiscales ---
+    responsabilidades_fiscales = models.ManyToManyField(ResponsabilidadFiscal, blank=True)
+
+    def __str__(self):
+        if self.tipo == 'PERSONA':
+            return f"{self.nombres} {self.apellidos}"
+        else:
+            return self.razon_social
+        
 # --- MODELOS CENTRALES DEL FLUJO DE TRABAJO ---
 
 class Proyecto(models.Model):
