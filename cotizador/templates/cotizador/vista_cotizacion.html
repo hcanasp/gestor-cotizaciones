@@ -1,61 +1,127 @@
+{% load static %}
+{% load humanize %}
 <!DOCTYPE html>
 <html lang="es">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Cotización</title>
-    <style>
-        body { font-family: sans-serif; margin: 40px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { border: 1px solid #ccc; padding: 8px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        .total-row { font-weight: bold; }
-    </style>
+    <link rel="stylesheet" href="{% static 'cotizador/cotizacion_style.css' %}">
 </head>
+
 <body>
 
-    <h1>Cotización para: {{ cotizacion.proyecto.cliente.nombre }}</h1>
-    <p><strong>Proyecto:</strong> {{ cotizacion.proyecto.nombre }}</p>
-    <p><strong>Fecha:</strong> {{ cotizacion.fecha_creacion|date:"d/m/Y" }}</p>
-    <p><strong>Válida hasta:</strong> {{ cotizacion.valida_hasta|date:"d/m/Y" }}</p>
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1>Nombre de tu Empresa</h1>
+                <p>Tu Dirección, Ciudad<br>Tu Teléfono<br>Tu Email</p>
+            </div>
+            <div>
+                <h2>COTIZACIÓN</h2>
+                <p><strong>Fecha:</strong> {{ cotizacion.fecha_creacion|date:"d/m/Y" }}</p>
+                <p><strong>Válida hasta:</strong> {{ cotizacion.valida_hasta|date:"d/m/Y" }}</p>
+            </div>
+        </div>
 
-    <table>
-        <thead>
-            <tr>
-                <th>Descripción</th>
-                <th>Cantidad</th>
-                <th>Precio Unitario</th>
-                <th>Subtotal</th>
-            </tr>
-        </thead>
-        <tbody>
-            {% for item in cotizacion.items.all %}
-            <tr>
-                <td>{{ item.descripcion_agrupada }}</td>
-                <td>{{ item.cantidad }}</td>
-                <td>${{ item.precio_unitario|floatformat:2 }}</td>
-                <td>${{ item.subtotal|floatformat:2 }}</td>
-            </tr>
-            {% endfor %}
-        </tbody>
-    </table>
+        <div class="info-cliente">
+            <strong>CLIENTE:</strong>
+            <p>
+                {% if cotizacion.proyecto.cliente.tipo == 'EMPRESA' %}
+                {{ cotizacion.proyecto.cliente.razon_social }}<br>
+                NIT: {{ cotizacion.proyecto.cliente.identificacion }}
+                {% else %}
+                {{ cotizacion.proyecto.cliente.nombres }} {{ cotizacion.proyecto.cliente.apellidos }}<br>
+                CC: {{ cotizacion.proyecto.cliente.identificacion }}
+                {% endif %}
+            </p>
+            <p><strong>Proyecto:</strong> {{ cotizacion.proyecto.nombre }}</p>
+        </div>
 
-    <hr>
+        <table>
+            <thead>
+                <tr>
+                    <th>Descripción</th>
+                    <th>Garantía</th>
+                    <th>Cantidad</th>
+                    <th>Precio Unitario</th>
+                    <th>Subtotal</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in cotizacion.items.all %}
+                <tr>
+                    <td>{{ item.descripcion_agrupada }}</td>
 
-    <table>
-        <tr class="total-row">
-            <td>SUBTOTAL</td>
-            <td>${{ cotizacion.subtotal_antes_impuestos|floatformat:2 }}</td>
-        </tr>
-        <tr>
-            <td>IVA ({{ cotizacion.porcentaje_impuestos }}%)</td>
-            <td>${{ cotizacion.valor_impuestos_calculado|floatformat:2 }}</td>
-        </tr>
-        <tr class="total-row">
-            <td>TOTAL</td>
-            <td>${{ cotizacion.total|floatformat:2 }}</td>
-        </tr>
-    </table>
+                    <td>
+                        {% if item.garantia_meses > 0 %}
+                        {{ item.garantia_meses }} meses
+                        {% else %}
+                        Sin garantía
+                        {% endif %}
+                    </td>
 
+                    <td>{{ item.cantidad }}</td>
+                    <td>${{ item.precio_unitario|floatformat:2|intcomma }}</td>
+                    <td>${{ item.subtotal|floatformat:2|intcomma }}</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <table class="totales">
+            <tbody>
+                <tr>
+                    <td>SUBTOTAL</td>
+                    <td>{{ cotizacion.moneda }} {{ cotizacion.subtotal_antes_impuestos|floatformat:2|intcomma }}</td>
+                </tr>
+                <tr>
+                    <td>IVA ({{ cotizacion.porcentaje_impuestos|floatformat:0 }}%)</td>
+                    <td>{{ cotizacion.moneda }} {{ cotizacion.valor_impuestos_calculado|floatformat:2|intcomma }}</td>
+                </tr>
+                <tr class="total-final">
+                    <td>TOTAL</td>
+                    <td>{{ cotizacion.moneda }} {{ cotizacion.total|floatformat:2|intcomma }}</td>
+                </tr>
+            </tbody>
+        </table>
+
+        {% if cotizacion.pagos.all %}
+        <div style="margin-top: 40px; margin-bottom: 20px;">
+            <h3 style="color: #005a9c; border-bottom: 1px solid #ccc; padding-bottom: 5px; font-size: 1.1em;">Forma de
+                Pago</h3>
+
+            <table style="width: 100%; margin-top: 10px; font-size: 0.85em;">
+                <thead>
+                    <tr>
+                        <th style="width: 15%; text-align: center;">%</th>
+                        <th style="width: 25%;">Valor</th>
+                        <th>Concepto / Descripción</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for pago in cotizacion.pagos.all %}
+                    <tr>
+                        <td style="text-align: center;">{{ pago.porcentaje|floatformat:0 }}%</td>
+
+                        <td>{{ cotizacion.moneda }} {{ pago.valor|floatformat:2|intcomma }}</td>
+
+                        <td>{{ pago.descripcion }}</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% endif %}
+
+        <div class="footer">
+            <p><strong>Condiciones Comerciales:</strong><br>{{ cotizacion.condiciones_comerciales|linebreaksbr }}</p>
+            <p><strong>Tiempos de Entrega:</strong><br>{{ cotizacion.tiempos_entrega|linebreaksbr }}</p>
+            <p><strong>Garantía:</strong><br>{{ cotizacion.garantia|linebreaksbr }}</p>
+        </div>
+
+    </div>
 </body>
+
 </html>

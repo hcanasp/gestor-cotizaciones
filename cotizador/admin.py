@@ -12,11 +12,12 @@ from .models import (
     ItemCotizacion,
     Contacto,
     ResponsabilidadFiscal,
+    HitoPago,
 )
 
 class ContactoInline(admin.TabularInline):
     model = Contacto
-    extra = 1 # Muestra un espacio para agregar un contacto nuevo
+    extra = 1 
 
 class DetalleItemProyectoInline(admin.TabularInline):
     model = DetalleItemProyecto
@@ -26,16 +27,21 @@ class ProyectoAdmin(admin.ModelAdmin):
     inlines = [DetalleItemProyectoInline]
     list_display = ('nombre', 'cliente', 'estado', 'fecha_creacion')
     list_filter = ('estado', 'cliente')
+    class Media:
+        js = ('cotizador/autocomplete_precio.js',)
 
-# --- ¡NUEVA CLASE PARA PERSONALIZAR LA VISTA DE COTIZACIÓN! ---
+class HitoPagoInline(admin.TabularInline):
+    model = HitoPago
+    extra = 1 
+    fields = ('porcentaje', 'descripcion', 'valor') 
+    readonly_fields = ('valor',)    
+
 class CotizacionAdmin(admin.ModelAdmin):
-    # Muestra estos campos como columnas en la lista de cotizaciones
+    inlines = [HitoPagoInline]
     list_display = ('__str__', 'proyecto', 'version', 'total', 'id_unico')
-
-    # ¡NUEVA CLASE PARA PERSONALIZAR LA VISTA DE CLIENTE!
+    readonly_fields = ('id_unico',)
+    
 class ClienteAdmin(admin.ModelAdmin):
-   class ClienteAdmin(admin.ModelAdmin):
-    # Usamos fieldsets para agrupar los campos en secciones
     fieldsets = [
         ('Datos Básicos', {
             'fields': ('tipo',)
@@ -55,10 +61,9 @@ class ClienteAdmin(admin.ModelAdmin):
             'fields': ('responsabilidades_fiscales',)
         }),
     ]
-    # Agregamos la tabla de contactos en la parte inferior
+    
     inlines = [ContactoInline]
 
-    # Un widget más amigable para seleccionar las responsabilidades
     filter_horizontal = ('responsabilidades_fiscales',)
 
     list_display = ('__str__', 'tipo', 'identificacion', 'email')
