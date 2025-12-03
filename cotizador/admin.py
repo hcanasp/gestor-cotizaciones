@@ -13,6 +13,8 @@ from .models import (
     Contacto,
     ResponsabilidadFiscal,
     HitoPago,
+    Remision,
+    ItemRemision,
 )
 
 class ContactoInline(admin.TabularInline):
@@ -27,6 +29,7 @@ class ProyectoAdmin(admin.ModelAdmin):
     inlines = [DetalleItemProyectoInline]
     list_display = ('nombre', 'cliente', 'estado', 'fecha_creacion')
     list_filter = ('estado', 'cliente')
+    search_fields = ['nombre', 'cliente__nombres', 'cliente__razon_social']
     class Media:
         js = ('cotizador/autocomplete_precio.js',)
 
@@ -37,9 +40,15 @@ class HitoPagoInline(admin.TabularInline):
     readonly_fields = ('valor',)    
 
 class CotizacionAdmin(admin.ModelAdmin):
-    inlines = [HitoPagoInline]
     list_display = ('__str__', 'proyecto', 'version', 'total', 'id_unico')
     readonly_fields = ('id_unico',)
+    inlines = [HitoPagoInline]
+
+    class Media:
+        js = ('cotizador/cotizacion_admin.js',)
+        css = {
+            'all': ('cotizador/cotizacion_admin.css',) # Esto es opcional, pero ayuda a forzar la carga
+        }
     
 class ClienteAdmin(admin.ModelAdmin):
     fieldsets = [
@@ -73,7 +82,6 @@ class ClienteAdmin(admin.ModelAdmin):
 
 # --- Registros ---
 admin.site.register(Proveedor)
-admin.site.register(Producto)
 admin.site.register(Intermediario)
 admin.site.register(Cliente, ClienteAdmin) 
 admin.site.register(ItemCotizacion)
@@ -81,3 +89,26 @@ admin.site.register(Proyecto, ProyectoAdmin)
 admin.site.register(ResponsabilidadFiscal)
 admin.site.register(Contacto)
 admin.site.register(Cotizacion, CotizacionAdmin)
+
+# --- Configuración para Remisiones ---
+
+class ItemRemisionInline(admin.TabularInline):
+    model = ItemRemision
+    extra = 1
+    autocomplete_fields = ['producto']
+
+class RemisionAdmin(admin.ModelAdmin):
+    inlines = [ItemRemisionInline]
+    list_display = ('id', 'proyecto', 'fecha_creacion', 'recibido_por')
+    list_filter = ('fecha_creacion',)
+    search_fields = ['proyecto__nombre', 'recibido_por']
+    autocomplete_fields = ['proyecto']
+
+admin.site.register(Remision, RemisionAdmin)
+
+# Modificación a ProductoAdmin para permitir búsqueda
+class ProductoAdmin(admin.ModelAdmin):
+    search_fields = ['nombre']
+
+# Re-registramos Producto con la nueva configuración
+admin.site.register(Producto, ProductoAdmin)

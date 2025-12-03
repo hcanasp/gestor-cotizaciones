@@ -1,0 +1,186 @@
+{% load static %}
+{% load humanize %}
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Remisión de Entrega #{{ remision.id }}</title>
+    <link rel="stylesheet" href="{% static 'cotizador/cotizacion_style.css' %}">
+    <style>
+        /* Estilos específicos para la Remisión */
+        .firma-box {
+            margin-top: 80px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .firma {
+            width: 40%;
+            border-top: 1px solid #000;
+            padding-top: 10px;
+        }
+
+        .firma-titulo {
+            text-align: center;
+            font-weight: bold;
+            display: block;
+            margin-bottom: 15px;
+        }
+
+        .firma-datos {
+            text-align: left;
+            font-size: 0.9em;
+            line-height: 1.6;
+        }
+
+        .logistica-info {
+            background-color: #f9f9f9;
+            padding: 15px;
+            margin-bottom: 20px;
+            border-left: 4px solid #005a9c;
+            border-radius: 4px;
+        }
+
+        .tabla-logistica {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .tabla-logistica td {
+            padding: 4px 8px;
+            border: none;
+            vertical-align: top;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="no-print" style="text-align: right; max-width: 800px; margin: 20px auto;">
+        <button onclick="window.print()"
+            style="background-color: #005a9c; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+            🖨️ Imprimir Remisión
+        </button>
+    </div>
+
+    <div class="container">
+        <div class="header">
+            <div>
+                <h1 style="color: #005a9c;">Nombre de tu Empresa</h1>
+                <p>Tu Dirección, Ciudad<br>NIT: 900.000.000-1<br>Tu Teléfono</p>
+            </div>
+            <div style="text-align: right;">
+                <h2 style="color: #333;">REMISIÓN DE ENTREGA</h2>
+                <h3 style="color: #555; margin: 0;">No. {{ remision.id }}</h3>
+                <p><strong>Fecha:</strong> {{ remision.fecha_creacion|date:"d/m/Y h:i A" }}</p>
+            </div>
+        </div>
+
+        <div class="info-cliente">
+            <strong>CLIENTE / PROYECTO:</strong>
+            <p>
+                {% if remision.proyecto.cliente.tipo == 'EMPRESA' %}
+                {{ remision.proyecto.cliente.razon_social }}
+                {% else %}
+                {{ remision.proyecto.cliente.nombres }} {{ remision.proyecto.cliente.apellidos }}
+                {% endif %}
+                <br>
+                <strong>Proyecto:</strong> {{ remision.proyecto.nombre }}
+            </p>
+        </div>
+
+        <div class="logistica-info">
+            <h4 style="margin-top: 0; color: #005a9c; margin-bottom: 10px;">DATOS DE ENTREGA</h4>
+            <table class="tabla-logistica">
+                <tr>
+                    <td style="width: 50%;"><strong>Recibe:</strong> {{ remision.recibido_por }}</td>
+                    <td><strong>ID Receptor:</strong> {{ remision.identificacion_receptor }}</td>
+                </tr>
+                <tr>
+                    <td><strong>Conductor:</strong> {{ remision.conductor }}</td>
+                    <td>
+                        <strong>Placa / Transp:</strong>
+                        {{ remision.placa_vehiculo }}
+
+                        {% if remision.empresa_transportadora %}
+                        - {{ remision.empresa_transportadora }}
+                        {% endif %}
+                    </td>
+                </tr>
+            </table>
+        </div>
+
+        <table style="width: 100%; border-collapse: collapse; margin-top: 30px;">
+            <thead>
+                <tr>
+                    <th style="background-color: #005a9c; color: white; padding: 8px; width: 30%;">Ubicación / Espacio
+                    </th>
+                    <th style="background-color: #005a9c; color: white; padding: 8px;">Descripción del Producto</th>
+                    <th
+                        style="background-color: #005a9c; color: white; padding: 8px; width: 100px; text-align: center;">
+                        Cant.</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for item in remision.items_remision.all %}
+                <tr>
+                    <td style="border-bottom: 1px solid #ddd; padding: 8px; vertical-align: top;">
+                        {% if item.espacio %}
+                        <strong>{{ item.espacio }}</strong>
+                        {% if item.sub_espacio %}
+                        <br><span style="font-size: 0.9em; color: #666;">↳ {{ item.sub_espacio }}</span>
+                        {% endif %}
+                        {% else %}
+                        <span style="color: #999;">--</span>
+                        {% endif %}
+                    </td>
+                    <td style="border-bottom: 1px solid #ddd; padding: 8px; vertical-align: top;">
+                        {% if item.producto %}
+                        {{ item.producto.nombre }}
+                        {% else %}
+                        {{ item.descripcion_variable }}
+                        {% endif %}
+                    </td>
+                    <td
+                        style="border-bottom: 1px solid #ddd; padding: 8px; text-align: center; font-weight: bold; vertical-align: top;">
+                        {{ item.cantidad|floatformat:2 }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        {% if remision.observaciones %}
+        <div style="margin-top: 20px;">
+            <strong>Observaciones:</strong>
+            <p style="border: 1px solid #ddd; padding: 10px; border-radius: 4px;">{{ remision.observaciones|linebreaksbr
+                }}</p>
+        </div>
+        {% endif %}
+
+        <div class="firma-box">
+            <div class="firma">
+                <br><br>
+                <span class="firma-titulo">ENTREGADO POR</span>
+                <div class="firma-datos" style="text-align: center;">
+                    Firma y Sello
+                </div>
+            </div>
+            <div class="firma">
+                <br><br>
+                <span class="firma-titulo">RECIBIDO A SATISFACCIÓN</span>
+                <div class="firma-datos">
+                    <strong>Nombre:</strong> {{ remision.recibido_por }}<br>
+                    <strong>C.C. / NIT:</strong> {{ remision.identificacion_receptor }}<br>
+                    <strong>Fecha:</strong> __________________
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+</body>
+
+</html>

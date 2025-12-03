@@ -234,7 +234,7 @@ class HitoPago(models.Model):
         super().save(*args, **kwargs)
 
 class Cotizacion(models.Model):
-    # --- CAMPOS ORIGINALES ---
+    # --- CAMPOS DE RELACIÓN E IDENTIFICACIÓN (LOS QUE FALTABAN) ---
     proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE)
     version = models.PositiveIntegerField(default=1)
     es_activa = models.BooleanField(default=True)
@@ -260,20 +260,20 @@ class Cotizacion(models.Model):
     total = models.DecimalField(max_digits=12, decimal_places=2, default=0)
     mostrar_impuestos_desglosados = models.BooleanField(default=False)
 
-    # --- NUEVOS CAMPOS DE MONEDA ---
+    # --- CAMPOS DE MONEDA ---
     MONEDA_CHOICES = [
         ('COP', 'Pesos Colombianos'),
         ('USD', 'Dólares Americanos'),
     ]
     moneda = models.CharField(max_length=3, choices=MONEDA_CHOICES, default='COP')
-    trm = models.DecimalField("TRM (Tasa de cambio)", max_digits=10, decimal_places=2, default=1.0, help_text="Si es COP, dejar en 1. Si es USD, colocar la tasa del día.")
+    trm = models.DecimalField("TRM (Tasa de cambio)", max_digits=10, decimal_places=2, default=1.0)
 
     def __str__(self):
         return f"Cotización V{self.version} para: {self.proyecto.nombre}"
 
-    # --- LÓGICA DE GUARDADO ---
+    # --- LÓGICA DE CÁLCULO (MOTOR) ---
     def save(self, *args, **kwargs):
-        # 1. Agrupar y sumar
+        # 1. Agrupar y sumar productos del proyecto
         resumen_productos = {}
         for detalle in self.proyecto.detalles.all():
             if detalle.producto:
@@ -313,10 +313,13 @@ class Cotizacion(models.Model):
         self.valor_impuestos_calculado = impuestos
         self.total = subtotal + impuestos
 
+        # Guardamos la cotización principal
         super().save(*args, **kwargs)
 
-        # 3. Actualizar pagos
+        # 3. ACTUALIZAR LOS PAGOS (Aquí se arregla el 0.00)
+        # Como ya tenemos el self.total calculado arriba, ahora sí podemos calcular los porcentajes
         for pago in self.pagos.all():
+            pago.valor = (self.total * pago.porcentaje) / 100
             pago.save()
 
         # 4. Recrear items
@@ -344,3 +347,55 @@ class ItemCotizacion(models.Model):
     garantia_meses = models.PositiveIntegerField("Garantía (meses)", default=0)
     def subtotal(self): return self.cantidad * self.precio_unitario
     def __str__(self): return f"Resumen: {self.cantidad} x {self.descripcion_agrupada}"
+
+# --- MÓDULO DE REMISIONES AUTOMATIZADAS DE ENTREGA ---
+class Remision(models.Model):
+    proyecto = models.ForeignKey(Proyecto, on_delete=models.CASCADE, related_name='remisiones')
+    fecha_creacion = models.DateTimeField(default=timezone.now)
+    
+    conductor = models.CharField(max_length=200, blank=True)
+    placa_vehiculo = models.CharField(max_length=20, blank=True)
+    empresa_transportadora = models.CharField(max_length=200, blank=True)
+    
+    recibido_por = models.CharField(max_length=200, blank=True)
+    identificacion_receptor = models.CharField(max_length=50, blank=True)
+    
+    observaciones = models.TextField(blank=True)
+
+    def __str__(self):
+        return f"Remisión #{self.id} - {self.proyecto.nombre}"
+
+    # --- LÓGICA DE AUTOMATIZACIÓN MEJORADA ---
+    def save(self, *args, **kwargs):
+        # Verificamos si es nueva
+        es_nueva = self.pk is None
+        
+        super().save(*args, **kwargs)
+
+        if es_nueva:
+            # Copiamos TODOS los detalles del proyecto, uno por uno
+            for detalle in self.proyecto.detalles.all():
+                ItemRemision.objects.create(
+                    remision=self,
+                    producto=detalle.producto,
+                    descripcion_variable=detalle.descripcion_manual,
+                    cantidad=detalle.cantidad,
+                    # --- ¡AQUÍ ESTÁ LA CLAVE! COPIAMOS LA UBICACIÓN ---
+                    espacio=detalle.espacio,
+                    sub_espacio=detalle.sub_espacio
+                )
+
+class ItemRemision(models.Model):
+    remision = models.ForeignKey(Remision, related_name='items_remision', on_delete=models.CASCADE)
+    producto = models.ForeignKey(Producto, on_delete=models.SET_NULL, null=True, blank=True)
+    descripcion_variable = models.CharField(max_length=255, blank=True)
+    
+    # --- NUEVOS CAMPOS PARA GUARDAR LA UBICACIÓN ---
+    espacio = models.CharField(max_length=200, blank=True)
+    sub_espacio = models.CharField(max_length=200, blank=True)
+    
+    cantidad = models.DecimalField(max_digits=10, decimal_places=2)
+
+    def __str__(self):
+        nombre = self.producto.nombre if self.producto else self.descripcion_variable
+        return f"{self.cantidad} - {nombre}"

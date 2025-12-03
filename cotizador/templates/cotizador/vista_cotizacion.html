@@ -11,6 +11,12 @@
 </head>
 
 <body>
+    <div class="no-print" style="text-align: right; max-width: 800px; margin: 20px auto;">
+        <button onclick="window.print()"
+            style="background-color: #005a9c; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: bold;">
+            🖨️ Descargar / Imprimir PDF
+        </button>
+    </div>
 
     <div class="container">
         <div class="header">
@@ -43,16 +49,19 @@
             <thead>
                 <tr>
                     <th>Descripción</th>
-                    <th>Garantía</th>
                     <th>Cantidad</th>
                     <th>Precio Unitario</th>
-                    <th>Subtotal</th>
+                    <th>Valor Total</th>
+                    <th>Garantía</th>
                 </tr>
             </thead>
             <tbody>
                 {% for item in cotizacion.items.all %}
                 <tr>
                     <td>{{ item.descripcion_agrupada }}</td>
+                    <td>{{ item.cantidad }}</td>
+                    <td>{{ cotizacion.moneda }} {{ item.precio_unitario|floatformat:2|intcomma }}</td>
+                    <td>{{ cotizacion.moneda }} {{ item.subtotal|floatformat:2|intcomma }}</td>
 
                     <td>
                         {% if item.garantia_meses > 0 %}
@@ -61,10 +70,6 @@
                         Sin garantía
                         {% endif %}
                     </td>
-
-                    <td>{{ item.cantidad }}</td>
-                    <td>${{ item.precio_unitario|floatformat:2|intcomma }}</td>
-                    <td>${{ item.subtotal|floatformat:2|intcomma }}</td>
                 </tr>
                 {% endfor %}
             </tbody>
@@ -95,7 +100,7 @@
             <table style="width: 100%; margin-top: 10px; font-size: 0.85em;">
                 <thead>
                     <tr>
-                        <th style="width: 15%; text-align: center;">%</th>
+                        <th style="width: 15%; text-align: center;">Porcentaje</th>
                         <th style="width: 25%;">Valor</th>
                         <th>Concepto / Descripción</th>
                     </tr>

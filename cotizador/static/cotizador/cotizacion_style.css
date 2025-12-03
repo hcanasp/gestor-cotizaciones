@@ -24,7 +24,8 @@ body {
     justify-content: space-between;
     align-items: flex-start;
     padding-bottom: 20px;
-    border-bottom: 2px solid #005a9c; /* Un color azul corporativo */
+    border-bottom: 2px solid #005a9c;
+    /* Un color azul corporativo */
 }
 
 .header h1 {
@@ -51,7 +52,8 @@ table {
     margin-top: 30px;
 }
 
-th, td {
+th,
+td {
     padding: 12px 15px;
     text-align: left;
     border-bottom: 1px solid #ddd;
@@ -75,7 +77,8 @@ tbody tr:nth-of-type(even) {
 .totales {
     margin-top: 30px;
     width: 50%;
-    margin-left: auto; /* Alinea la tabla de totales a la derecha */
+    margin-left: auto;
+    /* Alinea la tabla de totales a la derecha */
 }
 
 .totales td {
@@ -100,4 +103,28 @@ tbody tr:nth-of-type(even) {
     border-top: 1px solid #ddd;
     font-size: 0.85em;
     color: #777;
+}
+
+/* ESTILOS SOLO PARA IMPRESIÓN / PDF */
+@media print {
+
+    /* Ocultar el botón y cualquier elemento con la clase no-print */
+    .no-print {
+        display: none !important;
+    }
+
+    /* Ajustes para que el PDF se vea limpio */
+    body {
+        background-color: white;
+        margin: 0;
+    }
+
+    .container {
+        width: 100%;
+        max-width: 100%;
+        margin: 0;
+        padding: 0;
+        box-shadow: none;
+        border: none;
+    }
 }
