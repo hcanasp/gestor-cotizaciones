@@ -131,6 +131,13 @@ STATICFILES_DIRS = [
     os.path.join(BASE_DIR, 'cotizador/static'),
 ]
 
+# --- ¡AGREGA ESTAS DOS LÍNEAS! ---
+# Esto le dice a Django dónde REUNIR todos los archivos para la nube
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
+
+# Esta línea habilita la compresión y optimización para producción (Whitenoise)
+STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
 
